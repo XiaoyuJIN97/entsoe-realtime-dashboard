@@ -143,7 +143,7 @@ st.markdown(
         font-size: clamp(1rem, 1.55vw, 1.25rem);
       }
       .summary-section-title {
-        color: var(--text-color, #262730);
+        color: inherit;
         font-size: 1.05rem;
         font-weight: 650;
         margin-top: 1.15rem;
