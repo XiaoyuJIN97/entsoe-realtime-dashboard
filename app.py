@@ -116,7 +116,7 @@ st.markdown(
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
         gap: 0.75rem;
-        margin: 1rem 0 1.4rem;
+        margin: 0.55rem 0 1.25rem;
       }
       .metric-tile {
         border: 1px solid rgba(17, 24, 39, 0.12);
@@ -141,6 +141,12 @@ st.markdown(
       }
       .metric-value-compact {
         font-size: clamp(1rem, 1.55vw, 1.25rem);
+      }
+      .summary-section-title {
+        color: var(--text-color, #262730);
+        font-size: 1.05rem;
+        font-weight: 650;
+        margin-top: 1.15rem;
       }
     </style>
     """,
@@ -174,11 +180,15 @@ total_estimated_size_bytes = (
 )
 
 st.markdown(
+    '<div class="summary-section-title">Latest Run</div>'
     '<div class="metric-grid">'
-    + metric_tile("Last collection", format_collection_time(status.get("collection_time_utc")), compact=True)
-    + metric_tile("OK", f"{safe_int(status.get('ok_items')):,}")
+    + metric_tile("Collection time", format_collection_time(status.get("collection_time_utc")), compact=True)
+    + metric_tile("Succeeded tasks", f"{safe_int(status.get('ok_items')):,}")
     + metric_tile("Warnings", f"{safe_int(status.get('warning_items')):,}")
     + metric_tile("Errors", f"{safe_int(status.get('error_items')):,}")
+    + "</div>"
+    '<div class="summary-section-title">Total Snapshot Results</div>'
+    '<div class="metric-grid">'
     + metric_tile("Snapshot files", f"{len(snapshot_summary):,}")
     + metric_tile(
         "Snapshot rows",
