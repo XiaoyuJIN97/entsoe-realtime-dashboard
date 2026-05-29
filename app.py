@@ -119,22 +119,21 @@ st.markdown(
         margin: 1rem 0 1.4rem;
       }
       .metric-tile {
-        border: 1px solid rgba(128, 128, 128, 0.28);
-        border-color: color-mix(in srgb, var(--text-color, #262730) 18%, transparent);
+        border: 1px solid rgba(17, 24, 39, 0.12);
         border-radius: 8px;
         padding: 0.8rem 0.9rem;
         min-height: 5.2rem;
-        background: var(--secondary-background-color, rgba(128, 128, 128, 0.08));
+        background: #f8fafc;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
       }
       .metric-label {
-        color: var(--text-color, #262730);
-        color: color-mix(in srgb, var(--text-color, #262730) 68%, transparent);
+        color: #475569;
         font-size: 0.88rem;
         line-height: 1.2;
         margin-bottom: 0.35rem;
       }
       .metric-value {
-        color: var(--text-color, #262730);
+        color: #0f172a;
         font-size: clamp(1.35rem, 2.3vw, 2rem);
         font-weight: 650;
         line-height: 1.12;
