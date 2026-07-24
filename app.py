@@ -15,7 +15,15 @@ REMOTE_DATA_BASE_URL = (
     "Energy-Data-Science/entsoe-realtime-data/data/"
 )
 ESTIMATED_CSV_BYTES_PER_ROW = 165
-COUNTRIES = ("BE", "FR", "DE")
+COUNTRY_LABELS = {
+    "BE": "Belgium",
+    "FR": "France",
+    "DE": "Germany / Luxembourg",
+    "NL": "Netherlands",
+    "DK1": "Denmark DK1",
+    "DK2": "Denmark DK2",
+}
+COUNTRIES = tuple(COUNTRY_LABELS)
 VARIABLES = (
     "actual_load",
     "forecast_load",
@@ -104,6 +112,21 @@ def metric_tile(label: str, value: str, compact: bool = False) -> str:
     )
 
 
+def country_label(code: str) -> str:
+    return f"{code} - {COUNTRY_LABELS.get(code, code)}"
+
+
+def dashboard_countries(snapshot_summary: pd.DataFrame) -> tuple[str, ...]:
+    available = []
+    if not snapshot_summary.empty and "country" in snapshot_summary.columns:
+        available = sorted(snapshot_summary["country"].dropna().astype(str).unique())
+    ordered = list(COUNTRIES)
+    for country in available:
+        if country not in ordered:
+            ordered.append(country)
+    return tuple(ordered)
+
+
 st.set_page_config(page_title="ENTSO-E Fetch Monitor", layout="wide")
 
 st.markdown(
@@ -156,15 +179,6 @@ st.markdown(
 st.title("ENTSO-E 15-Minute Collection Monitor")
 st.caption("Reading collected snapshots from the public GitHub data branch.")
 
-with st.sidebar:
-    st.header("Controls")
-    if st.button("Refresh data", width="stretch"):
-        st.cache_data.clear()
-        st.rerun()
-    selected_country = st.selectbox("Country", COUNTRIES)
-    selected_variable = st.selectbox("Variable", VARIABLES)
-    st.caption("Data cache refreshes every 60 seconds. Use Refresh data for an immediate update.")
-
 status = safe_remote_json("data/status.json")
 progress = safe_remote_json("data/progress.json")
 snapshot_summary = safe_remote_csv("data/update_manifest.csv")
@@ -172,11 +186,26 @@ latest_collection = None
 latest_files = pd.DataFrame()
 
 if not snapshot_summary.empty:
+    snapshot_summary["country_label"] = snapshot_summary["country"].map(country_label)
     latest_collection = snapshot_summary["collection_time_utc"].max()
     latest_files = snapshot_summary[snapshot_summary["collection_time_utc"] == latest_collection].copy()
 
+control_countries = dashboard_countries(snapshot_summary)
+
+with st.sidebar:
+    st.header("Controls")
+    if st.button("Refresh data", width="stretch"):
+        st.cache_data.clear()
+        st.rerun()
+    selected_country = st.selectbox("Country", control_countries, format_func=country_label)
+    selected_variable = st.selectbox("Variable", VARIABLES)
+    st.caption("Data cache refreshes every 60 seconds. Use Refresh data for an immediate update.")
+
 total_estimated_size_bytes = (
     estimate_csv_bytes(snapshot_summary["rows"].sum()) if not snapshot_summary.empty else 0
+)
+available_country_count = (
+    snapshot_summary["country"].dropna().astype(str).nunique() if not snapshot_summary.empty else 0
 )
 
 st.markdown(
@@ -195,6 +224,7 @@ st.markdown(
         f"{int(snapshot_summary['rows'].sum()) if not snapshot_summary.empty else 0:,}",
     )
     + metric_tile("Estimated CSV size", format_bytes(total_estimated_size_bytes))
+    + metric_tile("Countries present", f"{available_country_count:,} / {len(control_countries):,}")
     + "</div>",
     unsafe_allow_html=True,
 )
@@ -227,6 +257,7 @@ else:
         latest_files[
             [
                 "country",
+                "country_label",
                 "variable",
                 "rows",
                 "csv_size_estimate",
@@ -246,6 +277,7 @@ else:
                 [
                     "collection_time_utc",
                     "country",
+                    "country_label",
                     "variable",
                     "rows",
                     "window_start_utc",
@@ -269,11 +301,13 @@ if not snapshot_summary.empty:
         )
         .sort_values(["country", "variable"])
     )
+    coverage["country_label"] = coverage["country"].map(country_label)
     coverage["csv_size_estimate"] = coverage["rows"].map(estimate_csv_bytes).map(format_bytes)
     st.dataframe(
         coverage[
             [
                 "country",
+                "country_label",
                 "variable",
                 "collections",
                 "rows",
