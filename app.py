@@ -22,6 +22,8 @@ COUNTRY_LABELS = {
     "NL": "Netherlands",
     "DK1": "Denmark DK1",
     "DK2": "Denmark DK2",
+    "ES": "Spain",
+    "PT": "Portugal",
 }
 COUNTRIES = tuple(COUNTRY_LABELS)
 VARIABLES = (
@@ -60,6 +62,28 @@ def safe_remote_csv(path_value: str) -> pd.DataFrame:
     except Exception as exc:
         st.warning(f"Could not read {path_value}: {exc}")
         return pd.DataFrame()
+
+
+def normalize_snapshot_summary(frame: pd.DataFrame) -> pd.DataFrame:
+    columns = [
+        "collection_time_utc",
+        "collection_time_local",
+        "run_id",
+        "country",
+        "variable",
+        "rows",
+        "window_start_utc",
+        "window_end_utc",
+        "path",
+    ]
+    frame = frame.copy()
+    for column in columns:
+        if column not in frame.columns:
+            frame[column] = 0 if column == "rows" else ""
+    frame["country"] = frame["country"].astype(str)
+    frame["variable"] = frame["variable"].astype(str)
+    frame["rows"] = pd.to_numeric(frame["rows"], errors="coerce").fillna(0).astype("int64")
+    return frame
 
 
 def safe_remote_json(path_value: str) -> dict:
@@ -182,6 +206,7 @@ st.caption("Reading collected snapshots from the public GitHub data branch.")
 status = safe_remote_json("data/status.json")
 progress = safe_remote_json("data/progress.json")
 snapshot_summary = safe_remote_csv("data/update_manifest.csv")
+snapshot_summary = normalize_snapshot_summary(snapshot_summary)
 latest_collection = None
 latest_files = pd.DataFrame()
 
@@ -194,7 +219,7 @@ control_countries = dashboard_countries(snapshot_summary)
 
 with st.sidebar:
     st.header("Controls")
-    if st.button("Refresh data", width="stretch"):
+    if st.button("Refresh data", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
     selected_country = st.selectbox("Country", control_countries, format_func=country_label)
@@ -267,7 +292,7 @@ else:
             ]
         ]
         .sort_values(["country", "variable"]),
-        width="stretch",
+        use_container_width=True,
         hide_index=True,
     )
     with st.expander("Recent collection history", expanded=False):
@@ -283,9 +308,9 @@ else:
                     "window_start_utc",
                     "window_end_utc",
                     "path",
-                ]
-            ],
-            width="stretch",
+            ]
+        ],
+            use_container_width=True,
             hide_index=True,
         )
 
@@ -316,7 +341,7 @@ if not snapshot_summary.empty:
                 "latest_window_end_utc",
             ]
         ],
-        width="stretch",
+        use_container_width=True,
         hide_index=True,
     )
 
@@ -338,7 +363,7 @@ else:
     preview_path = options.loc[
         options["collection_time_utc"] == selected_collection, "path"
     ].iloc[0]
-    load_preview = st.button("Load preview", width="stretch")
+    load_preview = st.button("Load preview", use_container_width=True)
 
     if not load_preview:
         st.info("Choose a collection time, then load the preview chart when needed.")
@@ -363,11 +388,14 @@ else:
                 color="source",
                 title=f"{selected_country} - {selected_variable} - collected {selected_collection}",
             )
-            st.plotly_chart(fig, width="stretch")
+            st.plotly_chart(fig, use_container_width=True)
 
 st.subheader("Recent Run Events")
-history = safe_remote_csv("data/run_history.csv")
-if history.empty:
-    st.info("No run history yet.")
+if st.checkbox("Load recent run history", value=False):
+    history = safe_remote_csv("data/run_history.csv")
+    if history.empty:
+        st.info("No run history yet.")
+    else:
+        st.dataframe(history.tail(100).iloc[::-1], use_container_width=True, hide_index=True)
 else:
-    st.dataframe(history.tail(100).iloc[::-1], width="stretch", hide_index=True)
+    st.caption("Run history is loaded on demand to keep the public dashboard lightweight.")
