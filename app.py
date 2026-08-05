@@ -219,7 +219,7 @@ control_countries = dashboard_countries(snapshot_summary)
 
 with st.sidebar:
     st.header("Controls")
-    if st.button("Refresh data", use_container_width=True):
+    if st.button("Refresh data", width="stretch"):
         st.cache_data.clear()
         st.rerun()
     selected_country = st.selectbox("Country", control_countries, format_func=country_label)
@@ -292,7 +292,7 @@ else:
             ]
         ]
         .sort_values(["country", "variable"]),
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
     with st.expander("Recent collection history", expanded=False):
@@ -310,7 +310,7 @@ else:
                     "path",
             ]
         ],
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
 
@@ -341,7 +341,7 @@ if not snapshot_summary.empty:
                 "latest_window_end_utc",
             ]
         ],
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
 
@@ -363,7 +363,7 @@ else:
     preview_path = options.loc[
         options["collection_time_utc"] == selected_collection, "path"
     ].iloc[0]
-    load_preview = st.button("Load preview", use_container_width=True)
+    load_preview = st.button("Load preview", width="stretch")
 
     if not load_preview:
         st.info("Choose a collection time, then load the preview chart when needed.")
@@ -388,7 +388,7 @@ else:
                 color="source",
                 title=f"{selected_country} - {selected_variable} - collected {selected_collection}",
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
 st.subheader("Recent Run Events")
 if st.checkbox("Load recent run history", value=False):
@@ -396,6 +396,6 @@ if st.checkbox("Load recent run history", value=False):
     if history.empty:
         st.info("No run history yet.")
     else:
-        st.dataframe(history.tail(100).iloc[::-1], use_container_width=True, hide_index=True)
+        st.dataframe(history.tail(100).iloc[::-1], width="stretch", hide_index=True)
 else:
     st.caption("Run history is loaded on demand to keep the public dashboard lightweight.")
